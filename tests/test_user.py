@@ -2,24 +2,16 @@
 
 """
 # https://www.stickyminds.com/article/how-skeleton-strings-can-help-your-testing
-Suspend ServiceAccount - True
-Suspend ServiceAccount - False
-Suspend ServiceAccount - "true"
-Suspend ServiceAccount - 0
-Suspend ServiceAccount - 1
-
-Delete User - Good int
-Delete User - Bad int
+Delete User - Good id
+Delete User - Bad id
 Delete User - String int
-Delete User - String Bob
-Delete User - [space]
+Delete User - String Empty
 Delete User - null
 
-Delete ServiceAccount - Good int
-Delete ServiceAccount - Bad int
+Delete ServiceAccount - Good id
+Delete ServiceAccount - Bad id
 Delete ServiceAccount - String int
-Delete ServiceAccount - String Bob
-Delete ServiceAccount - [space]
+Delete ServiceAccount - String Empty
 Delete ServiceAccount - null
 
 
@@ -87,9 +79,21 @@ List Resources - Filter - "healthy:true", "healthy:false",
 List Resources - Filter - DB Specific
 List Resources - Filter - Linux Server Specific
 List Nodes - Filter - Gatewqy, Relay
+Remove Resource - DB
+Remove Resource - Linux Server - SSH Server
+Remove Resource - K8
+Remove Resource - Gateway
+Remove Resource - Relay
 
+--- CLI Tests ---
+Filter User
+Delete User
 
+Filter Role
+Delete Role
 
+Filter Resource
+Remove Resource
 
 """
 import pytest
@@ -98,28 +102,6 @@ from strongdm import BadRequestError, InternalError, AlreadyExistsError
 
 from tests.conftest import name_values, punctuation_list, accepted_punctuation_failures, unicode_whitespace_characters, \
     email_values, updated_name_values, updated_email_values, suspend_values
-
-"""
-./sdm admin
-   clouds                                  manage clouds
-   clusters                                manage clusters
-   kubernetes, k8s                         manage Kubernetes cluster
-   ports                                   manage port overrides
-   rdp                                     manage RDP servers
-   relays, relay                           manage relays
-   remote-identities, remote-identity, ri  manage remote identities
-   resources                               manage resources
-   rest                                    make custom HTTP REST requests
-   roles                                   manage roles
-   secretstores, secretstore               manage secret stores
-   servers                                 manage servers
-   services, svc, service                  manage service accounts
-   ssh                                     manage SSH public key servers
-   users                                   manage users
-   websites, web, http                     manage websites
-
-"""
-
 
 """
 --- Bugs ---
