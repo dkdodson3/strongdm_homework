@@ -72,6 +72,13 @@ name_values = [
     ("Null in Name", 'null', False),
 ]
 
+updated_name_values = [
+    ("Normal Name", "foo", True),
+    ("No Name", "", False),
+    ("Space for Name", " ", False),
+    ("Null in Name", 'null', True),
+]
+
 email_values = [
     ("Normal Email", "bob@bob.com", True),
     ("Invalid Email", "bob@@bob.com", False),
@@ -80,7 +87,20 @@ email_values = [
     ("Foreign Characters Email", "Ľuboš_Bartečko@bob.com", True),
     ("Chinese Characters Email", "您可以撼動它@bob.com", True),
 ]
-q
+
+updated_email_values = [
+    ("Normal Email", "bob@bob.com", True),
+    ("Invalid Email", "bob@@bob.com", False),
+    ("No Email", None, False),
+    ("Foreign Characters Email", "Ľuboš_Bartečko@bob.com", True)
+]
+
+suspend_values = [
+    (True, True),
+    (False, False),
+    (0, False),
+    (1, True),
+]
 
 unicode_whitespace_characters = [
     ("space", "\u0020"),

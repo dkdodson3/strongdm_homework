@@ -2,40 +2,6 @@
 
 """
 # https://www.stickyminds.com/article/how-skeleton-strings-can-help-your-testing
-Update User - Name - Name Change
-Update User - Name - [space]
-Update User - Email - Email Change
-Update User - Email - Invalid Email
-Update User - Email - null
-Update User - Remote Identity - No Name
-Update User - Remote Identity - [space]
-Update User - Remote Identity - flibberty gibbet
-Update User - Remote Identity - Different Punctuations (`~!@#$%^&*()_+|}{[]\":;'<>?/.,’)
-Update User - Remote Identity - Foreign Characters (Ľuboš Bartečko)
-Update User - Remote Identity - Chinese Characters (您可以撼動它)
-Update User - ???'managed:false'???
-
-Create ServiceAccount - No Name
-Create ServiceAccount - [space]
-Create ServiceAccount - foo bar
-Create ServiceAccount - Email address instead of name
-Create ServiceAccount - [MIN Characters]
-Create ServiceAccount - [MAX Characters]
-X Create ServiceAccount - Different Punctuations (`~!@#$%^&*()_+|}{[]\":;'<>?/.,’)
-Create ServiceAccount - Foreign Characters (Ľuboš Bartečko)
-Create ServiceAccount - Chinese Characters (您可以撼動它)
-Create ServiceAccount - HTML (<a href=”http://cnn.com”>CNN</a>)
-Create ServiceAccount - Javascript (javascript:alert("Danger!");)
-Create ServiceAccount - SQL Injection (drop table Users;)
-
-Update ServiceAccount - Name - Name Change
-Update ServiceAccount - Remote Identity - No Name
-Update ServiceAccount - Remote Identity - [space]
-Update ServiceAccount - Remote Identity - flibberty gibbet
-Update ServiceAccount - Remote Identity - Different Punctuations (`~!@#$%^&*()_+|}{[]\":;'<>?/.,’)
-Update ServiceAccount - Remote Identity - Foreign Characters (Ľuboš Bartečko)
-Update ServiceAccount - Remote Identity - Chinese Characters (您可以撼動它)
-
 Suspend User - True
 Suspend User - False
 Suspend User - "true"
@@ -137,7 +103,7 @@ import strongdm
 from strongdm import BadRequestError, InternalError, AlreadyExistsError
 
 from tests.conftest import name_values, punctuation_list, accepted_punctuation_failures, unicode_whitespace_characters, \
-    email_values
+    email_values, updated_name_values, updated_email_values, suspend_values
 
 """
 ./sdm admin
@@ -206,7 +172,7 @@ def test_add_user_with_different_values(client, user, description, name_value, s
     user.first_name = name_value
     try:
         user_response = client.accounts.create(user, timeout=30)
-    except Exception as e:  # BadRequestError, InternalError
+    except (BadRequestError, InternalError) as e:
         if should_pass:
             e.msg = f"{e.msg}: {user.first_name}"
             raise e
@@ -222,7 +188,7 @@ def test_add_user_with_unicode_values(client, user, description, unicode_value):
     user.first_name = f"a_{unicode_value}{user.first_name}"
     try:
         user_response = client.accounts.create(user, timeout=30)
-    except Exception as e:  # BadRequestError, InternalError
+    except (BadRequestError, InternalError) as e:
         e.msg = f"{e.msg}: {user.first_name}"
         raise e
     finally:
@@ -233,12 +199,11 @@ def test_add_user_with_unicode_values(client, user, description, unicode_value):
 @pytest.mark.parametrize("description, email_value, should_pass", email_values)
 def test_add_user_with_different_emails(client, user, description, email_value, should_pass):
     user_response = None
-    user.email = email_value
     try:
+        user.email = email_value
         user_response = client.accounts.create(user, timeout=30)
-        if not should_pass:
-            raise Exception(f"Email of '{user.email}' should not have been allowed")
-    except BadRequestError as e:  # BadRequestError, InternalError, TypeError
+        assert bool(user) == should_pass, f"Email of '{user.email}' should not have been allowed to be created"
+    except (BadRequestError, InternalError, TypeError) as e:
         if should_pass:
             e.msg = f"{e.msg}: {user.email}"
             raise e
@@ -258,3 +223,75 @@ def test_add_user_with_same_email(client, user):
     finally:
         if user_response:
             client.accounts.delete(user_response.account.id)
+
+
+@pytest.mark.parametrize("description, name_value, should_pass", updated_name_values)
+def test_update_user_with_values(client, user, description, name_value, should_pass):
+    responses = list()
+    try:
+        user_response = client.accounts.create(user, timeout=30)
+        if user_response and user_response.account:
+            responses.append(user_response)
+
+        account = user_response.account
+        account.first_name = name_value
+        updated_user_response = client.accounts.update(account)
+        assert name_value == updated_user_response.account.first_name
+    except Exception as e:
+        if should_pass and responses:
+            e.msg = f"{e.msg}: {responses[-1].first_name}"
+            raise e
+    finally:
+        for response in responses:
+            response_id = response.account.id
+            client.accounts.delete(id=response_id)
+
+
+@pytest.mark.parametrize("description, email_value, should_pass", updated_email_values)
+def test_update_user_with_different_emails(client, user, description, email_value, should_pass):
+    responses = list()
+    try:
+        user_response = client.accounts.create(user, timeout=30)
+        if user_response and user_response.account:
+            responses.append(user_response)
+
+        account = user_response.account
+        account.email = email_value
+        updated_user = client.accounts.update(account)
+
+        assert bool(updated_user) == should_pass, f"Email of '{updated_user.email}' should not have been allowed to update"
+    except (BadRequestError, InternalError, TypeError) as e:
+        if should_pass:
+            e.msg = f"{e.msg}: {email_value}"
+            raise e
+    finally:
+        for response in responses:
+            client.accounts.delete(response.account.id)
+
+
+@pytest.mark.parametrize("suspend_value, suspend", suspend_values)
+def test_suspend_user(client, user, suspend_value, suspend):
+    responses = list()
+    try:
+        user_response = client.accounts.create(user, timeout=30)
+        if user_response and user_response.account:
+            responses.append(user_response)
+
+        account = user_response.account
+        account.suspended = suspend_value
+        updated_user = client.accounts.update(account)
+
+        # Filter for values and validate ID is in the list or not
+        suspended_accounts = list(client.accounts.list("suspended:true"))
+        updated_account = None
+        for suspended in suspended_accounts:
+            if account.id == suspended.id:
+                updated_account = suspended
+
+        if (updated_account and updated_account.suspended) and not suspend:
+            raise AssertionError(f"User was suspended when they should not have been.")
+        elif updated_account is None and suspend:
+            raise AssertionError(f"User was not suspended when they should not have been.")
+    finally:
+        for response in responses:
+            client.accounts.delete(response.account.id)

@@ -1,7 +1,8 @@
 import pytest
 from strongdm import BadRequestError, AlreadyExistsError
 
-from tests.conftest import name_values, accepted_punctuation_failures, punctuation_list, unicode_whitespace_characters
+from tests.conftest import name_values, accepted_punctuation_failures, punctuation_list, unicode_whitespace_characters, \
+    updated_name_values
 
 
 @pytest.mark.parametrize("punc", punctuation_list)
@@ -59,3 +60,25 @@ def test_add_service_account_with_same_name(client, service_account):
     finally:
         if service_account_response:
             client.accounts.delete(service_account_response.account.id)
+
+
+@pytest.mark.parametrize("description, name_value, should_pass", updated_name_values)
+def test_update_service_account_with_values(client, service_account, description, name_value, should_pass):
+    responses = list()
+    try:
+        service_account_response = client.accounts.create(service_account, timeout=30)
+        if service_account_response and service_account_response.account:
+            responses.append(service_account_response)
+
+        account = service_account_response.account
+        account.name = name_value
+        updated_service_account_response = client.accounts.update(account)
+        assert name_value == updated_service_account_response.account.name
+    except Exception as e:
+        if should_pass and responses:
+            e.msg = f"{e.msg}: {responses[-1].name}"
+            raise e
+    finally:
+        for response in responses:
+            response_id = response.account.id
+            client.accounts.delete(id=response_id)
