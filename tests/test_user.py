@@ -2,12 +2,6 @@
 
 """
 # https://www.stickyminds.com/article/how-skeleton-strings-can-help-your-testing
-Suspend User - True
-Suspend User - False
-Suspend User - "true"
-Suspend User - 0
-Suspend User - 1
-
 Suspend ServiceAccount - True
 Suspend ServiceAccount - False
 Suspend ServiceAccount - "true"
