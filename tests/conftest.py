@@ -4,15 +4,6 @@ import pytest
 import os
 import strongdm
 
-# from typing import Optional
-# from pydantic import BaseModel, EmailStr
-#
-#
-# class User(BaseModel):
-#     id: Optional[int] = None
-#     name: str
-#     email: EmailStr
-
 
 @pytest.fixture(scope="session", name="credentials")
 def get_client_credentials_fixture() -> dict:
@@ -28,7 +19,6 @@ def get_client_credentials_fixture() -> dict:
 def get_client_fixture(credentials):
     client = strongdm.Client(**credentials)
     yield client
-    pass
 
 
 def get_user(first: str = None, last: str = None, email_address: str = None):
@@ -46,13 +36,32 @@ def get_user(first: str = None, last: str = None, email_address: str = None):
 
 
 @pytest.fixture(name="user")
-def buser_fixture() -> strongdm.User:
+def user_fixture() -> strongdm.User:
     return get_user()
 
 
 @pytest.fixture(name="service_account")
 def service_fixture() -> strongdm.Service:
     return strongdm.Service(name=f"Apple_{random.randint(100000000, 999999999)}")
+
+
+@pytest.fixture(name="role")
+def role_fixture() -> strongdm.Role:
+    return strongdm.Role(name=f"ROLL_{random.randint(100000000, 999999999)}", access_rules=[])
+
+
+@pytest.fixture(name="resource_postgres")
+def resource_postgres_fixture() -> strongdm.Postgres:
+    postgres = strongdm.Postgres(
+        name=f"Basic Postgres Resource{random.randint(1000000, 9999999)}",
+        hostname=f"foo{random.randint(1000000, 9999999)}.bar.com",
+        port=5432,
+        username=f"foo{random.randint(1000000, 9999999)}",
+        password="test123",
+        database="foo",
+        tags={"foo": "grant-access"},
+    )
+    return postgres
 
 
 punctuation_list = list("~!@#$%^&*()_+|}{[]\":;'<>? `/.,")
@@ -100,6 +109,15 @@ suspend_values = [
     (False, False),
     (0, False),
     (1, True),
+]
+
+delete_values = [
+    ("Good id", "REPLACE_ME", True),
+    ("Bad id", "tacos", False),
+    ("String int", "123456", False),
+    ("String Empty", "", False),
+    ("String null", "null", False),
+    ("Value None", None, False),
 ]
 
 unicode_whitespace_characters = [

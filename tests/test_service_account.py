@@ -1,8 +1,8 @@
 import pytest
-from strongdm import BadRequestError, AlreadyExistsError, InternalError
+from strongdm import BadRequestError, AlreadyExistsError, InternalError, NotFoundError
 
 from tests.conftest import name_values, accepted_punctuation_failures, punctuation_list, unicode_whitespace_characters, \
-    updated_name_values, suspend_values
+    updated_name_values, suspend_values, delete_values
 
 
 @pytest.mark.parametrize("punc", punctuation_list)
@@ -110,3 +110,25 @@ def test_suspend_service_account(client, service_account, suspend_value, suspend
     finally:
         for response in responses:
             client.accounts.delete(response.account.id)
+
+
+@pytest.mark.parametrize("description, delete_value, should_pass", delete_values)
+def test_delete_service_account(client, service_account, description, delete_value, should_pass):
+    service_account_response = None
+    cleanup = True
+    try:
+        service_account_response = client.accounts.create(service_account, timeout=30)
+        try:
+            if delete_value == "REPLACE_ME":
+                delete_value = service_account_response.account.id
+                cleanup = False
+
+            delete_response = client.accounts.delete(delete_value)
+            assert delete_response and should_pass, "There should not have been a delete response"
+        except (NotFoundError, Exception) as e:
+            if should_pass:
+                e.msg = f"{e.msg}: {delete_value}"
+                raise e
+    finally:
+        if service_account_response and cleanup:
+            client.accounts.delete(service_account_response.account.id)

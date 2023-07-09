@@ -1,107 +1,9 @@
 
-
-"""
-# https://www.stickyminds.com/article/how-skeleton-strings-can-help-your-testing
-Delete User - Good id
-Delete User - Bad id
-Delete User - String int
-Delete User - String Empty
-Delete User - null
-
-Delete ServiceAccount - Good id
-Delete ServiceAccount - Bad id
-Delete ServiceAccount - String int
-Delete ServiceAccount - String Empty
-Delete ServiceAccount - null
-
-
---- ROLES ---
-Suspend Role
-Create Role
-Delete Role
-Update Role
-- Id
-    + Valid
-    + Invalid
-- Name
-- Access Rules
-    + Static and Dynamic
-    + Static - One
-    + Static - Multi
-
-        {
-          "id": "r-6b73c71964a8920e",
-          "name": "asdf",
-          "accessRules": [
-            {
-              "ids": ["r-6b73c71964a8920f", "r-6b73c71964a8920g"],
-              "dbType": null,
-              "tags": [],
-              "naturalPolicy": ""
-            }
-          ]
-        }
-    + Dynamic - One
-    + Dynamic - Multi
-        {
-          "id": "r-6b73c71964a8920e",
-          "name": "asdf",
-          "accessRules": [
-            {
-              "ids": [],
-              "dbType": "kubernetes", # dbtype = Any="", DataSource, Website, Cluster, Server, Cloud
-              "tags": [
-                {
-                  "name": "wordwasp",
-                  "value": ""
-                }
-              ],
-              "naturalPolicy": ""
-            }
-          ]
-        }
-
-Assign Roles to user
-Assign Roles to tags
-Remove Roles from user
-Remove Roles from tags
-Grant Roles all datasources
-Revoke Roles from all datasources
-List Roles - Filter (name, tags, managed, id)
-
---- RESOURCES ---
-Add Resource - DB
-Add Resource - Linux Server - SSH Server
-Add Resource - K8
-Add Resource - Gateway
-Add Resource - Relay
-List Resources - Filter - "healthy:true", "healthy:false",
-List Resources - Filter - DB Specific
-List Resources - Filter - Linux Server Specific
-List Nodes - Filter - Gatewqy, Relay
-Remove Resource - DB
-Remove Resource - Linux Server - SSH Server
-Remove Resource - K8
-Remove Resource - Gateway
-Remove Resource - Relay
-
---- CLI Tests ---
-Filter User
-Delete User
-
-Filter Role
-Delete Role
-
-Filter Resource
-Remove Resource
-
-"""
 import pytest
-import strongdm
-from strongdm import BadRequestError, InternalError, AlreadyExistsError
+from strongdm import BadRequestError, InternalError, AlreadyExistsError, NotFoundError
 
 from tests.conftest import name_values, punctuation_list, accepted_punctuation_failures, unicode_whitespace_characters, \
-    email_values, updated_name_values, updated_email_values, suspend_values
+    email_values, updated_name_values, updated_email_values, suspend_values, delete_values
 
 """
 --- Bugs ---
@@ -110,21 +12,10 @@ Unicode Character Spaces are allowed but not a normal space
 Can add invalid email addresses
 """
 
-
-def test_healthy_resources(client, user):
-    # https://www.strongdm.com/docs/cli/filters/
-
-    # healthy_resources = list(client.resources.list('healthy:true'))
-    # unhealthy_resources = list(client.resources.list('healthy:false'))
-    # ri_resources = list(client.resources.list('remoteidentityenabled:true'))
-
-    # relays = list(client.nodes.list('type:relay'))
-
-    user.first_name = None
-    user.last_name = "1"
-    response = client.accounts.create(user, timeout=30)
-
-    pass
+# def test_delete_users(client):
+#     users = list(client.accounts.list('permission_level:user'))
+#     for user in users:
+#         client.accounts.delete(user.id)
 
 
 @pytest.mark.parametrize("punc", punctuation_list)
@@ -271,3 +162,25 @@ def test_suspend_user(client, user, suspend_value, suspend):
     finally:
         for response in responses:
             client.accounts.delete(response.account.id)
+
+
+@pytest.mark.parametrize("description, delete_value, should_pass", delete_values)
+def test_delete_user(client, user, description, delete_value, should_pass):
+    user_response = None
+    cleanup = True
+    try:
+        user_response = client.accounts.create(user, timeout=30)
+        try:
+            if delete_value == "REPLACE_ME":
+                delete_value = user_response.account.id
+                cleanup = False
+
+            delete_response = client.accounts.delete(delete_value)
+            assert delete_response and should_pass, "There should not have been a delete response"
+        except (NotFoundError, Exception) as e:
+            if should_pass:
+                e.msg = f"{e.msg}: {delete_value}"
+                raise e
+    finally:
+        if user_response and cleanup:
+            client.accounts.delete(user_response.account.id)
