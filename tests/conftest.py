@@ -5,6 +5,38 @@ import os
 import strongdm
 
 
+# --- Shared Functions ---
+def get_user(first: str = None, last: str = None, email_address: str = None):
+    if not first:
+        first = f"Tacos{random.randint(100000, 999999)}"
+
+    if not last:
+        last = f"McMuffin{random.randint(100000, 999999)}"
+
+    if not email_address:
+        email_address = f"{first}_{last}_{random.randint(100000, 999999)}@eyepaste.com"
+
+    return strongdm.User(email=email_address, first_name=first, last_name=last,
+)
+
+
+def get_resource_postgres(num: int = None) -> strongdm.Postgres:
+    if not num:
+        num = random.randint(1000000, 9999999)
+
+    postgres = strongdm.Postgres(
+        name=f"Basic Postgres Resource{num}",
+        hostname=f"foo{num}.bar.com",
+        port=5432,
+        username=f"foo{num}",
+        password="test123",
+        database="foo"
+    )
+
+    return postgres
+
+
+# --- Fixtures ---
 @pytest.fixture(scope="session", name="credentials")
 def get_client_credentials_fixture() -> dict:
     creds = {
@@ -19,20 +51,6 @@ def get_client_credentials_fixture() -> dict:
 def get_client_fixture(credentials):
     client = strongdm.Client(**credentials)
     yield client
-
-
-def get_user(first: str = None, last: str = None, email_address: str = None):
-    if not first:
-        first = f"Tacos{random.randint(100000, 999999)}"
-
-    if not last:
-        last = f"McMuffin{random.randint(100000, 999999)}"
-
-    if not email_address:
-        email_address = f"{first}_{last}_{random.randint(100000, 999999)}@eyepaste.com"
-
-    return strongdm.User(email=email_address, first_name=first, last_name=last,
-)
 
 
 @pytest.fixture(name="user")
@@ -52,18 +70,11 @@ def role_fixture() -> strongdm.Role:
 
 @pytest.fixture(name="resource_postgres")
 def resource_postgres_fixture() -> strongdm.Postgres:
-    postgres = strongdm.Postgres(
-        name=f"Basic Postgres Resource{random.randint(1000000, 9999999)}",
-        hostname=f"foo{random.randint(1000000, 9999999)}.bar.com",
-        port=5432,
-        username=f"foo{random.randint(1000000, 9999999)}",
-        password="test123",
-        database="foo",
-        tags={"foo": "grant-access"},
-    )
+    postgres = get_resource_postgres()
     return postgres
 
 
+# --- Shared Test Data for Parameterization ---
 punctuation_list = list("~!@#$%^&*()_+|}{[]\":;'<>? `/.,")
 accepted_punctuation_failures = ["\"", "<", ">"]
 
