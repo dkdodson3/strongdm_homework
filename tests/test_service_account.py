@@ -7,6 +7,9 @@ from tests.conftest import name_values, accepted_punctuation_failures, punctuati
 
 @pytest.mark.parametrize("punc", punctuation_list)
 def test_add_service_account_with_punctuation(client, service_account, punc):
+    """
+    A parameterized test to verify service accounts can have specific punctuation
+    """
     service_account_response = None
     service_account.name = f"{service_account.name}{punc}"
     try:
@@ -22,6 +25,9 @@ def test_add_service_account_with_punctuation(client, service_account, punc):
 
 @pytest.mark.parametrize("description, name_value, should_pass", name_values)
 def test_add_service_accounts_with_different_values(client, service_account, description, name_value, should_pass):
+    """
+    A parameterized test to add service accounts with different names
+    """
     service_account_response = None
     service_account.name = name_value
     try:
@@ -37,6 +43,9 @@ def test_add_service_accounts_with_different_values(client, service_account, des
 
 @pytest.mark.parametrize("description, unicode_value", unicode_whitespace_characters)
 def test_add_service_accounts_with_unicode_values(client, service_account, description, unicode_value):
+    """
+    A parameterized test to add service accounts with unicode values in the name
+    """
     service_account_response = None
     service_account.name = f"a_{unicode_value}{service_account.name}"
     try:
@@ -50,6 +59,9 @@ def test_add_service_accounts_with_unicode_values(client, service_account, descr
 
 
 def test_add_service_account_with_same_name(client, service_account):
+    """
+    A test to verify that you cannot have two service accounts with the same name.
+    """
     service_account_response = None
     try:
         service_account_response = client.accounts.create(service_account, timeout=30)
@@ -84,12 +96,17 @@ def test_update_service_account_with_values(client, service_account, description
 
 @pytest.mark.parametrize("suspend_value, suspend", suspend_values)
 def test_suspend_service_account(client, service_account, suspend_value, suspend):
+    """
+    A parameterized test to verify the suspending of service accounts
+    """
     responses = list()
     try:
+        # Creating the service account
         service_account_response = client.accounts.create(service_account, timeout=30)
         if service_account_response and service_account_response.account:
             responses.append(service_account_response)
 
+        # Updating the service account with the suspend_value
         account = service_account_response.account
         account.suspended = suspend_value
         client.accounts.update(account)
@@ -101,6 +118,7 @@ def test_suspend_service_account(client, service_account, suspend_value, suspend
             if account.id == suspended.id:
                 updated_account = suspended
 
+        # Verifying that the suspension value was applied correctly
         if (updated_account and updated_account.suspended) and not suspend:
             raise AssertionError(f"Service Account was suspended when they should not have been.")
         elif updated_account is None and suspend:
@@ -112,6 +130,9 @@ def test_suspend_service_account(client, service_account, suspend_value, suspend
 
 @pytest.mark.parametrize("description, delete_value, should_pass", delete_values)
 def test_delete_service_account(client, service_account, description, delete_value, should_pass):
+    """
+    A parameterized test to verify the deletion of service accounts
+    """
     service_account_response = None
     cleanup = True
     try:

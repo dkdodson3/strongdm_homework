@@ -6,7 +6,14 @@ import strongdm
 
 
 # --- Shared Functions ---
-def get_user(first: str = None, last: str = None, email_address: str = None):
+def get_user(first: str = None, last: str = None, email_address: str = None) -> strongdm.User:
+    """
+    Creates a prepopulated strongdm user
+    :param first: str
+    :param last: str
+    :param email_address: str
+    :return: strongdm.User
+    """
     if not first:
         first = f"Tacos{random.randint(100000, 999999)}"
 
@@ -19,7 +26,13 @@ def get_user(first: str = None, last: str = None, email_address: str = None):
     return strongdm.User(email=email_address, first_name=first, last_name=last)
 
 
-def get_role(name: str = None, access_rules: list = None):
+def get_role(name: str = None, access_rules: list = None) -> strongdm.Role:
+    """
+    Creates a prepopulated strongdm role
+    :param name: str
+    :param access_rules: list
+    :return: strongdm.Role
+    """
     if not name:
         name = f"ROLL_{random.randint(100000000, 999999999)}"
 
@@ -30,11 +43,16 @@ def get_role(name: str = None, access_rules: list = None):
 
 
 def get_resource_postgres(num: int = None) -> strongdm.Postgres:
+    """
+    Creates a prepopulated strongdm postgres
+    :param num: int
+    :return: strongdm.Postgres
+    """
     if not num:
         num = random.randint(1000000, 9999999)
 
     postgres = strongdm.Postgres(
-        name=f"Basic Postgres Resource{num}",
+        name=f"Fake Postgres Resource{num}",
         hostname=f"foo{num}.bar.com",
         port=5432,
         username=f"foo{num}",
@@ -48,6 +66,10 @@ def get_resource_postgres(num: int = None) -> strongdm.Postgres:
 # --- Fixtures ---
 @pytest.fixture(scope="session", name="credentials")
 def get_client_credentials_fixture() -> dict:
+    """
+    Gets the api keys from the OS
+    :return: dict
+    """
     creds = {
         "api_access_key": os.getenv("SDM_API_ACCESS_KEY", ""),
         "api_secret": os.getenv("SDM_API_SECRET_KEY", "")
@@ -57,30 +79,49 @@ def get_client_credentials_fixture() -> dict:
 
 
 @pytest.fixture(name="client")
-def get_client_fixture(credentials):
+def get_client_fixture(credentials) -> strongdm.Client:
+    """
+    Creates a client
+    :return: strongdm.Client
+    """
     client = strongdm.Client(**credentials)
     yield client
 
 
 @pytest.fixture(name="user")
 def user_fixture() -> strongdm.User:
+    """
+    Creates a strongdm user
+    :return: strongdm.User
+    """
     return get_user()
 
 
 @pytest.fixture(name="service_account")
 def service_fixture() -> strongdm.Service:
+    """
+    Creates a strongdm service account
+    :return: strongdm.Service
+    """
     return strongdm.Service(name=f"Apple_{random.randint(100000000, 999999999)}")
 
 
 @pytest.fixture(name="role")
 def role_fixture() -> strongdm.Role:
+    """
+    Creates a strongdm role
+    :return: strongdm.Role
+    """
     return get_role()
 
 
 @pytest.fixture(name="resource_postgres")
 def resource_postgres_fixture() -> strongdm.Postgres:
-    postgres = get_resource_postgres()
-    return postgres
+    """
+    Creates a strongdm postgres datasource
+    :return: strongdm.Postgres
+    """
+    return get_resource_postgres()
 
 
 # --- Shared Test Data for Parameterization ---
@@ -94,8 +135,6 @@ name_values = [
     ("Min characters for Name", "a", True),
     ("Max characters for Name", "a" * 1024, True),
     ("Over Max characters for Name", "a" * 1025, True),
-    # :Todo Should probably get a better error than a database error. We should be catching this before it goes to the database
-    #   strongdm.errors.InternalError: cannot create service account: cannot create entry for service account storage: internal error: database error
     ("Foreign characters in Name", "Ľuboš Bartečko", True),
     ("Chinese characters in Name", "您可以撼動它", True),
     ("HTML in Name", "<a href=”http://cnn.com”>CNN</a>", False),

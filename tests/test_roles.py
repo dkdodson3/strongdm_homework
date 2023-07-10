@@ -5,12 +5,18 @@ from tests.conftest import punctuation_list, accepted_punctuation_failures
 
 
 # def test_delete_roles(client):
+#     """
+#     Quickly delete roles
+#     """
 #     roles = list(client.roles.list('name:ROLL_*'))
 #     for role in roles:
 #         client.roles.delete(role.id)
 
 
 def test_add_role(client, role):
+    """
+    Test adding a role
+    """
     role_response = None
     try:
         role.name = "If I were a rich man..."
@@ -22,6 +28,9 @@ def test_add_role(client, role):
 
 @pytest.mark.parametrize("punc", punctuation_list)
 def test_add_role_with_punctuation(client, role, punc):
+    """
+    A parameterized test to validate users can have specific punctuation
+    """
     role_response = None
     role.name = f"{role.name}{punc}"
     try:
@@ -36,6 +45,9 @@ def test_add_role_with_punctuation(client, role, punc):
 
 
 def test_update_role(client, role):
+    """
+    Test updating a role
+    """
     role_response = None
     try:
         role_response = client.roles.create(role, timeout=30)
@@ -52,6 +64,9 @@ def test_update_role(client, role):
 
 
 def test_delete_role(client, role):
+    """
+    Test deleting a role
+    """
     role_response = None
     should_delete = True
     try:
@@ -72,12 +87,21 @@ def test_delete_role(client, role):
 
 
 def test_role_grant_by_tag(client, role, user, resource_postgres):
+    """
+    Test granting a role to a user by specific resource tags
+    """
+    # Create a user
     user.tags = {"name": "foo"}
-    resource_postgres.tags = {"name": "foo"}
     user_response = client.accounts.create(user, timeout=30)
+
+    # Create postgres datasource
+    resource_postgres.tags = {"name": "foo"}
     resource_postgres_response = client.resources.create(resource_postgres)
+
+    # Creating a role
     role_response = client.roles.create(role, timeout=30)
     try:
+        # Updating the access rules for a role
         current_role = role_response.role
         current_role.access_rules = [
             {
@@ -85,14 +109,16 @@ def test_role_grant_by_tag(client, role, user, resource_postgres):
             },
         ]
         current_role = client.roles.update(current_role)
+
+        # Creating an attachment between a role and a user
         account_attachment = AccountAttachment(
             account_id=user_response.account.id,
             role_id=current_role.role.id
         )
-
         client.account_attachments.create(account_attachment, timeout=30)
-        account_attachments = list(client.account_attachments.list(f'account_id:{user_response.account.id}'))
 
+        # Verify that the granting of access worked
+        account_attachments = list(client.account_attachments.list(f'account_id:{user_response.account.id}'))
         assert account_attachments[0].role_id == current_role.role.id, "Attachment was not made for the correct role"
     finally:
         client.accounts.delete(user_response.account.id)

@@ -7,12 +7,21 @@ from tests.conftest import get_resource_postgres
 
 
 # def test_delete_resources(client):
+#     """
+#     Quickly delete resources
+#     """
 #     resources = list(client.resources.list('healthy:false'))
 #     for resource in resources:
 #         client.resources.delete(resource.id)
 
 
 def get_resource_gateway(hostname: str = "apple.berry.com", port: int = None) -> strongdm.Gateway:
+    """
+    Get a prepopulated gateway resource
+    :param hostname: str
+    :param port: int
+    :return: strongdm.Gateway
+    """
     if not port:
         port = random.randint(5000, 7000)
 
@@ -24,6 +33,11 @@ def get_resource_gateway(hostname: str = "apple.berry.com", port: int = None) ->
 
 
 def get_resource_relay(num: int = None) -> strongdm.Relay:
+    """
+    Get a prepopulated relay resource
+    :param num: int
+    :return: strongdm.Relay
+    """
     if not num:
         num = random.randint(5000, 7000)
 
@@ -33,11 +47,18 @@ def get_resource_relay(num: int = None) -> strongdm.Relay:
     return relay
 
 
-def get_resource_k8_cluster(num: int = None) -> strongdm.AmazonEKS:
+def get_resource_k8_cluster(num: int = None, certificate_authority: str = None) -> strongdm.AmazonEKS:
+    """
+    Get a prepopulated k8 cluster resource
+    :param num: int
+    :param certificate_authority: str
+    :return: strongdm.AmazonEKS
+    """
     if not num:
         num = random.randint(5000, 7000)
 
-    certificate_authority = """-----BEGIN CERTIFICATE-----
+    if not certificate_authority:
+        certificate_authority = """-----BEGIN CERTIFICATE-----
 MIIEKjCCAxKgAwIBAgIEOGPe+DANBgkqhkiG9w0BAQUFADCBtDEUMBIGA1UEChMLRW50cnVzdC5u
 ZXQxQDA+BgNVBAsUN3d3dy5lbnRydXN0Lm5ldC9DUFNfMjA0OCBpbmNvcnAuIGJ5IHJlZi4gKGxp
 bWl0cyBsaWFiLikxJTAjBgNVBAsTHChjKSAxOTk5IEVudHJ1c3QubmV0IExpbWl0ZWQxMzAxBgNV
@@ -76,6 +97,12 @@ nNFMFY3h7CI3zJpDC5fcgJCNs2ebb0gIFVbPv/ErfF6adulZkMV8gzURZVE=
 
 
 def get_resource_ssh_server(hostname: str = "hyper.tank.com", port: int = None) -> strongdm.SSH:
+    """
+    Get a prepopulated ssh server resource
+    :param hostname: str
+    :param port: int
+    :return: strongdm.SSH
+    """
     if not port:
         port = random.randint(5000, 7000)
 
@@ -102,6 +129,9 @@ nodes = [
 
 
 def test_add_live_datasource(client):
+    """
+    Adding a live datasource
+    """
     postgres = strongdm.Postgres(
         name=f"Live Amazon Postgres Datasource",
         hostname=f"ec2-3-84-1-51.compute-1.amazonaws.com",
@@ -112,14 +142,16 @@ def test_add_live_datasource(client):
         tags={"datasource": "live"},
     )
 
-    # Pre Setup
+    # Test Setup: Delete the datasource if found
     for datasource in client.resources.list(filter='tags:datasource=live'):
         client.resources.delete(datasource.id)
 
+    # Creating a datasource
     resource_response = client.resources.create(resource=postgres)
     resource_id = resource_response.resource.id
     datasource_response = client.resources.get(resource_id)
 
+    # Waiting for the data source to show as healthy and asserting it happened within a minute
     num = 30
     count = 0
     while not datasource_response.resource.healthy and count <= num:
@@ -132,6 +164,9 @@ def test_add_live_datasource(client):
 
 @pytest.mark.parametrize("description, resource", resources)
 def test_add_find_and_remove_resources(client, description, resource):
+    """
+    A parameterized test for adding, finding, and removing a datasource
+    """
     resource_response = None
     delete_response = None
     try:
@@ -156,6 +191,9 @@ def test_add_find_and_remove_resources(client, description, resource):
 
 @pytest.mark.parametrize("description, node", nodes)
 def test_add_find_and_remove_nodes(client, description, node):
+    """
+    A parameterized test for adding, finding, and removing nodes
+    """
     node_response = None
     delete_response = None
     try:
