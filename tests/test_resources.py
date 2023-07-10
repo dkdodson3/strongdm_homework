@@ -110,7 +110,8 @@ def get_resource_ssh_server(hostname: str = "hyper.tank.com", port: int = None) 
         name=f"SSH Server for {hostname}:{port}",
         hostname=hostname,
         username=f"ssh_user_{port}",
-        port=port
+        port=port,
+
     )
 
     return ssh_server
@@ -128,9 +129,9 @@ nodes = [
 ]
 
 
-def test_add_live_datasource(client):
+def test_wait_for_healthy_datasource(client):
     """
-    Adding a live datasource
+    Adding a live datasource and waiting for a healthy state
     """
     postgres = strongdm.Postgres(
         name=f"Live Amazon Postgres Datasource",
@@ -212,3 +213,24 @@ def test_add_find_and_remove_nodes(client, description, node):
     finally:
         if node_response and not delete_response:
             client.nodes.delete(node_response.node.id)
+
+
+def test_connect_to_resource_after_relay_destroyed(client):
+    for datasource in client.resources.list(filter='name:wordwasp_debian'):
+        client.resources.delete(datasource.id)
+
+    ssh_server = get_resource_ssh_server(hostname="ec2-3-84-1-51.compute-1.amazonaws.com", port=2222)
+    ssh_server.name = 'wordwasp_debian'
+    ssh_server.key_type = 'ed25519'
+    # ssh_server.public_key = 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMpaI+ll54ywU+1s1WRBhrhEAsH4N9THUehgiPjEL3Eg'
+    ssh_server.username = 'root'
+    ssh_server.tags = {'wordwasp': ''}
+
+    ssh_server_response = client.resources.create(ssh_server, timeout=30)
+
+    # Unable to get this healthy or make the relay connect to it,,,
+    # I can ssh to it.
+    # Local box thinks it is connected but it is not really
+
+    # <sdm.SSH allow_deprecated_key_exchanges: False  secret_store_id: '' bind_interface: '127.0.0.1' egress_filter: '' healthy: True hostname: 'ec2-3-84-1-51.compute-1.amazonaws.com' id: 'rs-633797a564a86011' key_type: 'ed25519' name: 'wordwasp_debian' port: 2222 port_forwarding: False port_override: 10002 public_key: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMpaI+ll54ywU+1s1WRBhrhEAsH4N9THUehgiPjEL3Eg\n'
+    #  subdomain: '2bf00517bd35ef8f' tags: {'wordwasp': ''} username: 'root' >
