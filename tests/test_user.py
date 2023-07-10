@@ -1,6 +1,6 @@
 
 import pytest
-from strongdm import BadRequestError, InternalError, AlreadyExistsError, NotFoundError
+from strongdm import BadRequestError, InternalError, NotFoundError
 
 from tests.conftest import name_values, punctuation_list, accepted_punctuation_failures, unicode_whitespace_characters, \
     email_values, updated_name_values, updated_email_values, suspend_values, delete_values
@@ -9,7 +9,7 @@ from tests.conftest import name_values, punctuation_list, accepted_punctuation_f
 --- Bugs ---
 ./sdm admin ri list  # this is not showing anything
 Unicode Character Spaces are allowed but not a normal space
-Can add invalid email addresses
+others listed as Todo:
 """
 
 # def test_delete_users(client):
@@ -65,6 +65,7 @@ def test_add_user_with_unicode_values(client, user, description, unicode_value):
 
 @pytest.mark.parametrize("description, email_value, should_pass", email_values)
 def test_add_user_with_different_emails(client, user, description, email_value, should_pass):
+    # :Todo From the test results it does not look like we are checking for a valid email address except for an empty entry
     user_response = None
     try:
         user.email = email_value
@@ -83,10 +84,8 @@ def test_add_user_with_same_email(client, user):
     user_response = None
     try:
         user_response = client.accounts.create(user, timeout=30)
-        user_response2 = client.accounts.create(user, timeout=30)
+        client.accounts.create(user, timeout=30)
         raise Exception(f"User with the same email of '{user.email}' should not be allowed to be created")
-    except AlreadyExistsError as e:
-        pass
     finally:
         if user_response:
             client.accounts.delete(user_response.account.id)
@@ -116,6 +115,7 @@ def test_update_user_with_values(client, user, description, name_value, should_p
 
 @pytest.mark.parametrize("description, email_value, should_pass", updated_email_values)
 def test_update_user_with_different_emails(client, user, description, email_value, should_pass):
+    # :Todo This is noted in add user with email, it does not look like we are checking for a valid email address except for an empty entry
     responses = list()
     try:
         user_response = client.accounts.create(user, timeout=30)
@@ -146,7 +146,7 @@ def test_suspend_user(client, user, suspend_value, suspend):
 
         account = user_response.account
         account.suspended = suspend_value
-        updated_user = client.accounts.update(account)
+        client.accounts.update(account)
 
         # Filter for values and validate ID is in the list or not
         suspended_accounts = list(client.accounts.list("suspended:true"))

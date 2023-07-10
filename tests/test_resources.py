@@ -3,8 +3,6 @@ from time import sleep
 
 import pytest
 import strongdm
-from strongdm import NotFoundError
-
 from tests.conftest import get_resource_postgres
 
 
@@ -38,9 +36,6 @@ def get_resource_relay(num: int = None) -> strongdm.Relay:
 def get_resource_k8_cluster(num: int = None) -> strongdm.AmazonEKS:
     if not num:
         num = random.randint(5000, 7000)
-
-    # Some of this is borrowed from:
-    # https://github.com/strongdm/strongdm-sdk-python-examples/blob/master/1_managing_resources/create_eks_cluster.py
 
     certificate_authority = """-----BEGIN CERTIFICATE-----
 MIIEKjCCAxKgAwIBAgIEOGPe+DANBgkqhkiG9w0BAQUFADCBtDEUMBIGA1UEChMLRW50cnVzdC5u
@@ -114,7 +109,7 @@ def test_add_live_datasource(client):
         username="wordwasp",
         password="test123",
         database="wordwasp",
-        tags={"datasource":"live"},
+        tags={"datasource": "live"},
     )
 
     # Pre Setup
@@ -176,8 +171,6 @@ def test_add_find_and_remove_nodes(client, description, node):
         delete_response = client.nodes.delete(node_response.node.id)
         get_response = client.nodes.get(node_response.node.id)
         assert get_response.node, "Should not have found the node when doing a get"
-    except NotFoundError as e:
-        pass
     finally:
         if node_response and not delete_response:
             client.nodes.delete(node_response.node.id)

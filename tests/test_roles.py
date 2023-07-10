@@ -90,7 +90,7 @@ def test_role_grant_by_tag(client, role, user, resource_postgres):
             role_id=current_role.role.id
         )
 
-        account_attachment_response = client.account_attachments.create(account_attachment, timeout=30)
+        client.account_attachments.create(account_attachment, timeout=30)
         account_attachments = list(client.account_attachments.list(f'account_id:{user_response.account.id}'))
 
         assert account_attachments[0].role_id == current_role.role.id, "Attachment was not made for the correct role"

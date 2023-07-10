@@ -1,4 +1,3 @@
 strongdm
 pytest
-pydantic
 pexpect

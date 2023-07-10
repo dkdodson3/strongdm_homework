@@ -16,8 +16,17 @@ def get_user(first: str = None, last: str = None, email_address: str = None):
     if not email_address:
         email_address = f"{first}_{last}_{random.randint(100000, 999999)}@eyepaste.com"
 
-    return strongdm.User(email=email_address, first_name=first, last_name=last,
-)
+    return strongdm.User(email=email_address, first_name=first, last_name=last)
+
+
+def get_role(name: str = None, access_rules: list = None):
+    if not name:
+        name = f"ROLL_{random.randint(100000000, 999999999)}"
+
+    if not access_rules:
+        access_rules = list()
+
+    return strongdm.Role(name=name, access_rules=access_rules)
 
 
 def get_resource_postgres(num: int = None) -> strongdm.Postgres:
@@ -65,7 +74,7 @@ def service_fixture() -> strongdm.Service:
 
 @pytest.fixture(name="role")
 def role_fixture() -> strongdm.Role:
-    return strongdm.Role(name=f"ROLL_{random.randint(100000000, 999999999)}", access_rules=[])
+    return get_role()
 
 
 @pytest.fixture(name="resource_postgres")
@@ -84,7 +93,9 @@ name_values = [
     ("Space for Name", " ", False),
     ("Min characters for Name", "a", True),
     ("Max characters for Name", "a" * 1024, True),
-    ("Over Max characters for Name", "a" * 1025, True),  # This should fail but not in this way so I marked it as True so we can see it...
+    ("Over Max characters for Name", "a" * 1025, True),
+    # :Todo Should probably get a better error than a database error. We should be catching this before it goes to the database
+    #   strongdm.errors.InternalError: cannot create service account: cannot create entry for service account storage: internal error: database error
     ("Foreign characters in Name", "Ľuboš Bartečko", True),
     ("Chinese characters in Name", "您可以撼動它", True),
     ("HTML in Name", "<a href=”http://cnn.com”>CNN</a>", False),

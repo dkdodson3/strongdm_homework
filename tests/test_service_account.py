@@ -1,5 +1,5 @@
 import pytest
-from strongdm import BadRequestError, AlreadyExistsError, InternalError, NotFoundError
+from strongdm import BadRequestError, InternalError, NotFoundError
 
 from tests.conftest import name_values, accepted_punctuation_failures, punctuation_list, unicode_whitespace_characters, \
     updated_name_values, suspend_values, delete_values
@@ -53,10 +53,8 @@ def test_add_service_account_with_same_name(client, service_account):
     service_account_response = None
     try:
         service_account_response = client.accounts.create(service_account, timeout=30)
-        service_account_response2 = client.accounts.create(service_account, timeout=30)
+        client.accounts.create(service_account, timeout=30)
         raise Exception(f"Service Account with the same name of '{service_account.name}' should not be allowed to be created")
-    except AlreadyExistsError as e:
-        pass
     finally:
         if service_account_response:
             client.accounts.delete(service_account_response.account.id)
@@ -94,7 +92,7 @@ def test_suspend_service_account(client, service_account, suspend_value, suspend
 
         account = service_account_response.account
         account.suspended = suspend_value
-        updated_service_account = client.accounts.update(account)
+        client.accounts.update(account)
 
         # Filter for values and validate ID is in the list or not
         suspended_accounts = list(client.accounts.list("suspended:true"))
